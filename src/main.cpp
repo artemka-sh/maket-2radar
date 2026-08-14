@@ -36,9 +36,7 @@ Servo motorRightTop;
 Servo motorHorizontalRight;
 Servo motorHorizontalLeft;
 
-void updateLights();
-void smartDelay(unsigned long ms);
-void blinkProgram(int num);
+
 int calcSpeed(int baseSpeed);
 void moveSmoothly(int startSpeed, int targetSpeed, unsigned long durationMs);
 void rampTop(int startSpeed, int targetSpeed, unsigned long durationMs);
@@ -55,8 +53,8 @@ void setup() {
     pinMode(PIN_LED_FINISH, OUTPUT);
     digitalWrite(PIN_LED_FINISH, LOW);
 
-    analogWrite(PIN_LIGHT_1, 0);
-    analogWrite(PIN_LIGHT_2, 0);
+    digitalWrite(PIN_LIGHT_1, HIGH);
+    digitalWrite(PIN_LIGHT_2, HIGH);
 
     motorLeftTop.attach(PIN_TOP_LEFT);
     motorRightTop.attach(PIN_TOP_RIGHT);
@@ -86,109 +84,72 @@ void loop() {
     }
     lastProgram = currentProgram;
 
-    digitalWrite(PIN_LED_FINISH, LOW);
+    digitalWrite(PIN_LED_FINISH, HIGH);
 
-    blinkProgram(currentProgram);
-
-    // Пауза перед стартом (свет уже начинает пульсировать)
-    smartDelay(1000);
 
     switch (currentProgram) {
         case 1: program1(); break;
         case 2: program2(); break;
         case 3: program3(); break;
         case 4: program4(); break;
-        case 5: program5(); break;
+        // case 5: program5(); break;
     }
 
     digitalWrite(PIN_LED_FINISH, HIGH);
 
     // Выключаем свет после завершения
-    analogWrite(PIN_LIGHT_1, 0);
-    analogWrite(PIN_LIGHT_2, 0);
-
-    delay(3000);
+    delay(1000);
 }
 
-// Плавная пульсация света (вызывается постоянно во время движения и пауз)
-void updateLights() {
-    // Синусоида от 0.0 до 1.0 на основе времени
-    float pulse = (sin(millis() / 300.0) + 1.0) / 2.0;
-
-    analogWrite(PIN_LIGHT_1, pulse * 255); // Первый пин пульсирует
-    analogWrite(PIN_LIGHT_2, 255);         // Второй горит ровно
-}
-
-// Умная задержка, которая не вешает процессор и обновляет свет
-void smartDelay(unsigned long ms) {
-    unsigned long start = millis();
-    while (millis() - start < ms) {
-        updateLights();
-        delay(10);
-    }
-}
-
-// Быстрое мигание номером программы
-void blinkProgram(int num) {
-    for (int i = 0; i < num; i++) {
-        analogWrite(PIN_LIGHT_1, 255);
-        analogWrite(PIN_LIGHT_2, 255);
-        delay(80);
-        analogWrite(PIN_LIGHT_1, 0);
-        analogWrite(PIN_LIGHT_2, 0);
-        delay(100);
-    }
-    delay(400);
-}
 
 // Программа 1: Базовая
 void program1() {
     moveSmoothly(stopSpeed, calcSpeed(speedForward), rampTime);
-    smartDelay(moveTime);
+    delay(moveTime);
     moveSmoothly(calcSpeed(speedForward), stopSpeed, rampTime);
-    smartDelay(pauseTime);
+    delay(pauseTime);
 
     moveSmoothly(stopSpeed, calcSpeed(speedBackward), rampTime);
-    smartDelay(moveTime);
+    delay(moveTime);
     moveSmoothly(calcSpeed(speedBackward), stopSpeed, rampTime);
-    smartDelay(pauseTime);
+    delay(pauseTime);
 
     moveTopWithRatio(upSpeed, upTime, topAccelRatio);
-    smartDelay(topPauseTime);
+    delay(topPauseTime);
     moveTopWithRatio(downSpeed, downTime, topAccelRatio);
 }
 
 // Программа 2: Сначала подъем, потом горизонталь
 void program2() {
     moveTopWithRatio(upSpeed, upTime, topAccelRatio);
-    smartDelay(topPauseTime);
+    delay(topPauseTime);
     moveTopWithRatio(downSpeed, downTime, topAccelRatio);
-    smartDelay(pauseTime);
+    delay(pauseTime);
 
     moveSmoothly(stopSpeed, calcSpeed(speedForward), rampTime);
-    smartDelay(moveTime);
+    delay(moveTime);
     moveSmoothly(calcSpeed(speedForward), stopSpeed, rampTime);
-    smartDelay(pauseTime);
+    delay(pauseTime);
 
     moveSmoothly(stopSpeed, calcSpeed(speedBackward), rampTime);
-    smartDelay(moveTime);
+    delay(moveTime);
     moveSmoothly(calcSpeed(speedBackward), stopSpeed, rampTime);
 }
 
 // Программа 3: Ускоренная базовая (разгон и паузы срезаны вдвое)
 void program3() {
     moveSmoothly(stopSpeed, calcSpeed(speedForward), rampTime / 2);
-    smartDelay(moveTime);
+    delay(moveTime);
     moveSmoothly(calcSpeed(speedForward), stopSpeed, rampTime / 2);
-    smartDelay(pauseTime / 2);
+    delay(pauseTime / 2);
 
     moveSmoothly(stopSpeed, calcSpeed(speedBackward), rampTime / 2);
-    smartDelay(moveTime);
+    delay(moveTime);
     moveSmoothly(calcSpeed(speedBackward), stopSpeed, rampTime / 2);
-    smartDelay(pauseTime / 2);
+    delay(pauseTime / 2);
 
     moveTopWithRatio(upSpeed, upTime, topAccelRatio);
-    smartDelay(topPauseTime / 2);
+    delay(topPauseTime / 2);
     moveTopWithRatio(downSpeed, downTime, topAccelRatio);
 }
 
@@ -196,43 +157,43 @@ void program3() {
 void program4() {
     for(int i = 0; i < 3; i++) {
         moveSmoothly(stopSpeed, calcSpeed(speedForward), 300);
-        smartDelay(200);
+        delay(200);
         moveSmoothly(calcSpeed(speedForward), stopSpeed, 300);
-        smartDelay(300);
+        delay(300);
     }
 
-    smartDelay(pauseTime);
+    delay(pauseTime);
 
     moveTopWithRatio(upSpeed, upTime, topAccelRatio);
-    smartDelay(topPauseTime);
+    delay(topPauseTime);
     moveTopWithRatio(downSpeed, downTime, topAccelRatio);
-    smartDelay(pauseTime);
+    delay(pauseTime);
 
     // Долгий и плавный возврат
     moveSmoothly(stopSpeed, calcSpeed(speedBackward), rampTime * 1.5);
-    smartDelay(moveTime);
+    delay(moveTime);
     moveSmoothly(calcSpeed(speedBackward), stopSpeed, rampTime);
 }
 
-// Программа 5: "Радар" (медленный поиск и резкий бросок)
-void program5() {
-    int slowForward = stopSpeed + ((calcSpeed(speedForward) - stopSpeed) / 3);
-
-    // Долгое и медленное сканирование
-    moveSmoothly(stopSpeed, slowForward, 2500);
-    smartDelay(1000);
-    moveSmoothly(slowForward, stopSpeed, 1500);
-    smartDelay(1000);
-
-    // Резкий бросок обратно
-    moveSmoothly(stopSpeed, calcSpeed(speedBackward), 200);
-    smartDelay(500);
-    moveSmoothly(calcSpeed(speedBackward), stopSpeed, 400);
-
-    moveTopWithRatio(upSpeed, upTime, topAccelRatio);
-    smartDelay(topPauseTime);
-    moveTopWithRatio(downSpeed, downTime, topAccelRatio);
-}
+// // Программа 5: "Радар" (медленный поиск и резкий бросок)
+// void program5() {
+//     int slowForward = stopSpeed + ((calcSpeed(speedForward) - stopSpeed) / 3);
+//
+//     // Долгое и медленное сканирование
+//     moveSmoothly(stopSpeed, slowForward, 2500);
+//     delay(1000);
+//     moveSmoothly(slowForward, stopSpeed, 1500);
+//     delay(1000);
+//
+//     // Резкий бросок обратно
+//     moveSmoothly(stopSpeed, calcSpeed(speedBackward), 200);
+//     delay(500);
+//     moveSmoothly(calcSpeed(speedBackward), stopSpeed, 400);
+//
+//     moveTopWithRatio(upSpeed, upTime, topAccelRatio);
+//     delay(topPauseTime);
+//     moveTopWithRatio(downSpeed, downTime, topAccelRatio);
+// }
 
 // Пересчет скорости с учетом множителя
 int calcSpeed(int baseSpeed) {
@@ -251,7 +212,6 @@ void moveSmoothly(int startSpeed, int targetSpeed, unsigned long durationMs) {
         motorHorizontalRight.write(currentSpeed);
         motorHorizontalLeft.write(currentSpeed);
 
-        updateLights();
         delay(15);
     }
     motorHorizontalRight.write(targetSpeed);
@@ -269,7 +229,6 @@ void rampTop(int startSpeed, int targetSpeed, unsigned long durationMs) {
         motorLeftTop.write(currentSpeed);
         motorRightTop.write(currentSpeed);
 
-        updateLights();
         delay(15);
     }
     motorLeftTop.write(targetSpeed);
@@ -287,6 +246,6 @@ void moveTopWithRatio(int targetRawSpeed, unsigned long totalDurationMs, float r
     // Компенсация: даем левому мотору дополнительные 100 мс на рабочей скорости,
     // чтобы он успел довернуть механизм
     motorLeftTop.write(targetSpeed);
-    smartDelay(100);
+    delay(100);
     motorLeftTop.write(stopSpeed);
 }
