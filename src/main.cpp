@@ -25,12 +25,12 @@ int pauseTime = 2000;
 // === НАСТРОЙКИ ВЕРТИКАЛЬНЫХ МОТОРОВ (Идеальные калибровочные данные) ===
 int upTension = 71;    // Граница натяга ВВЕРХ
 int upSpeed = 59;      // Оптимальная рабочая сила ВВЕРХ
-int downTension = 119; // Граница натяга ВНИЗ
-int downSpeed = 123;   // Рабочая сила ВНИЗ
+int downTension = 118; // Граница натяга ВНИЗ
+int downSpeed = 122;   // Рабочая сила ВНИЗ
 
-int upTime = 1250;
+int upTime = 1230;
 int topPauseTime = 4000;
-int downTime = 1250;
+int downTime = 1000;
 
 int lastProgram = 0;
 
