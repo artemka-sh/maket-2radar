@@ -13,14 +13,14 @@
 // Глобальные модификаторы (применяются ТОЛЬКО к горизонтальным моторам)
 float globalSpeedMultiplier = 0.75;
 float topAccelRatio = 0.5;
-
+int globalLoopPause = 16000;
 // === НАСТРОЙКИ ГОРИЗОНТАЛЬНЫХ МОТОРОВ ===
 int stopSpeed = 90; // Жесткое удержание для ВСЕХ моторов
 int speedForward = 50;
 int speedBackward = 130;
-int rampTime = 1200;
+int rampTime = 2000;
 int moveTime = 500;
-int pauseTime = 1000;
+int pauseTime = 2000;
 
 // === НАСТРОЙКИ ВЕРТИКАЛЬНЫХ МОТОРОВ (Идеальные калибровочные данные) ===
 int upTension = 71;    // Граница натяга ВВЕРХ
@@ -28,9 +28,9 @@ int upSpeed = 59;      // Оптимальная рабочая сила ВВЕ�
 int downTension = 119; // Граница натяга ВНИЗ
 int downSpeed = 123;   // Рабочая сила ВНИЗ
 
-int upTime = 1500;
-int topPauseTime = 3000;
-int downTime = 1500;
+int upTime = 1250;
+int topPauseTime = 4000;
+int downTime = 1250;
 
 int lastProgram = 0;
 
@@ -39,7 +39,6 @@ Servo motorRightTop;
 Servo motorHorizontalRight;
 Servo motorHorizontalLeft;
 
-// Объявление функций
 int calcSpeed(int baseSpeed);
 void moveSmoothly(int startSpeed, int targetSpeed, unsigned long durationMs);
 void smartRampTop(int startSpeed, int targetSpeed, unsigned long durationMs);
@@ -81,9 +80,9 @@ void setup() {
 
 void loop() {
     // Выбор новой программы без повторений
-    int currentProgram = random(1, 5);
+    int currentProgram = random(1, 4);
     while (currentProgram == lastProgram) {
-        currentProgram = random(1, 5);
+        currentProgram = random(1, 4);
     }
     lastProgram = currentProgram;
 
@@ -97,7 +96,7 @@ void loop() {
     }
 
     digitalWrite(PIN_LED_FINISH, HIGH);
-    delay(1000);
+    delay(globalLoopPause);
 }
 
 
@@ -217,20 +216,20 @@ void smartRampTop(int startSpeed, int targetSpeed, unsigned long durationMs) {
     motorRightTop.write(targetSpeed);
 }
 
-// Точно по вашей калибровке: Прыжок -> Задержка -> Разгон -> Торможение -> Возврат в 90
+// для вертикальных моторов
 void moveTopWithRatio(int targetSpeed, unsigned long totalDurationMs, float ratio) {
-    // Определяем правильную точку натяга
+    // определение точки натяга
     bool isUp = (targetSpeed < stopSpeed);
     int tension = isUp ? upTension : downTension;
 
-    // Рассчитываем время разгона и торможения
+    // расчёт время разгона и торможения
     unsigned long accelTime = totalDurationMs * ratio;
     unsigned long decelTime = totalDurationMs - accelTime;
 
-    // 1. Мгновенно выбираем слабину (прыжок из 90 в точку натяга)
+    // выбор слабины
     motorLeftTop.write(tension);
     motorRightTop.write(tension);
-    delay(50); // Микро-пауза, чтобы шестерни сцепились без удара
+    delay(50);
 
     // 2. Плавный разгон (Натяг -> Рабочая скорость)
     smartRampTop(tension, targetSpeed, accelTime);
