@@ -11,7 +11,7 @@
 #define PIN_LED_FINISH 12
 
 // Глобальные модификаторы
-float globalSpeedMultiplier = 0.8; //сделали чуть медленней чем было
+float globalSpeedMultiplier = 0.75; //сделали чуть медленней чем было
 float topAccelRatio = 0.5;
 
 // Настройки горизонтальных моторов
@@ -23,11 +23,11 @@ int moveTime = 500;
 int pauseTime = 1000;
 
 // Настройки вертикальных моторов
-int upSpeed = 25;
-int downSpeed = 155;
-int upTime = 600;
+int upSpeed = 27;
+int downSpeed = 153;
+int upTime = 1500;
 int topPauseTime = 3000;
-int downTime = 500;
+int downTime = 1500;
 
 int lastProgram = 0;
 
@@ -175,26 +175,6 @@ void program4() {
     moveSmoothly(calcSpeed(speedBackward), stopSpeed, rampTime);
 }
 
-// // Программа 5: "Радар" (медленный поиск и резкий бросок)
-// void program5() {
-//     int slowForward = stopSpeed + ((calcSpeed(speedForward) - stopSpeed) / 3);
-//
-//     // Долгое и медленное сканирование
-//     moveSmoothly(stopSpeed, slowForward, 2500);
-//     delay(1000);
-//     moveSmoothly(slowForward, stopSpeed, 1500);
-//     delay(1000);
-//
-//     // Резкий бросок обратно
-//     moveSmoothly(stopSpeed, calcSpeed(speedBackward), 200);
-//     delay(500);
-//     moveSmoothly(calcSpeed(speedBackward), stopSpeed, 400);
-//
-//     moveTopWithRatio(upSpeed, upTime, topAccelRatio);
-//     delay(topPauseTime);
-//     moveTopWithRatio(downSpeed, downTime, topAccelRatio);
-// }
-
 // Пересчет скорости с учетом множителя
 int calcSpeed(int baseSpeed) {
     if (baseSpeed == stopSpeed) return stopSpeed;
@@ -221,16 +201,30 @@ void moveSmoothly(int startSpeed, int targetSpeed, unsigned long durationMs) {
 // Базовый разгон/тормоз для верхних моторов
 void rampTop(int startSpeed, int targetSpeed, unsigned long durationMs) {
     unsigned long startTime = millis();
-    while (millis() - startTime < durationMs) {
-        float progress = (float)(millis() - startTime) / durationMs;
-        if (progress > 1.0f) progress = 1.0f;
 
-        int currentSpeed = startSpeed + (targetSpeed - startSpeed) * progress;
+    while (true) {
+        unsigned long elapsed = millis() - startTime;
+        if (elapsed >= durationMs) {
+            break;
+        }
+        float progress = (float)elapsed / durationMs;
+
+        // Магическая формула S-кривой (SmoothStep): 3*x^2 - 2*x^3
+        // Дает идеальную плавность и на старте, и на финише движения.
+        float easeProgress = progress * progress * (3.0f - 2.0f * progress);
+
+        int currentSpeed = startSpeed + (targetSpeed - startSpeed) * easeProgress;
+
         motorLeftTop.write(currentSpeed);
         motorRightTop.write(currentSpeed);
 
-        delay(15);
+        // Изменил delay с 15 на 20!
+        // Стандартные сервоприводы работают на частоте 50Гц (обновление каждые 20мс).
+        // Если слать им сигнал чаще (каждые 15мс), дешевые контроллеры сервы могут "давиться"
+        // и пропускать такты, что тоже вызывает физические рывки.
+        delay(20);
     }
+
     motorLeftTop.write(targetSpeed);
     motorRightTop.write(targetSpeed);
 }
@@ -240,12 +234,14 @@ void moveTopWithRatio(int targetRawSpeed, unsigned long totalDurationMs, float r
     int targetSpeed = calcSpeed(targetRawSpeed);
     unsigned long accelTime = totalDurationMs * ratio;
 
+    // Плавный разгон
     rampTop(stopSpeed, targetSpeed, accelTime);
+
+    // Плавное, правильное торможение
     rampTop(targetSpeed, stopSpeed, totalDurationMs - accelTime);
 
-    // Компенсация: даем левому мотору дополнительные 100 мс на рабочей скорости,
-    // чтобы он успел довернуть механизм
-    motorLeftTop.write(targetSpeed);
-    delay(100);
+    // ВАЖНО: Никаких мгновенных включений delay(100) здесь быть не должно!
+    // Убеждаемся, что оба точно остановлены
     motorLeftTop.write(stopSpeed);
+    motorRightTop.write(stopSpeed);
 }
