@@ -80,9 +80,9 @@ void setup() {
 
 void loop() {
     // Выбор новой программы без повторений
-    int currentProgram = random(1, 4);
+    int currentProgram = random(1, 5);
     while (currentProgram == lastProgram) {
-        currentProgram = random(1, 4);
+        currentProgram = random(1, 5);
     }
     lastProgram = currentProgram;
 
